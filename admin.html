@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Casino Administración</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+<div class="wrap ancho">
+  <div id="demo" class="demo" hidden><b>Modo demostración.</b> La clave es <b>1234</b>. Los datos quedan solo en este navegador y los nombres son de ejemplo.</div>
+
+  <header>
+    <span class="eyebrow">Casino · Administración</span>
+    <h1 class="fecha" id="titulo">Lista del día</h1>
+  </header>
+
+  <!-- Clave -->
+  <section class="ticket" id="vLogin" hidden style="max-width:420px">
+    <h2>Entrar</h2>
+    <form id="formLogin" class="campo" style="gap:12px">
+      <div class="campo">
+        <label for="txtClave">Clave de administración</label>
+        <input type="password" id="txtClave" autocomplete="current-password">
+      </div>
+      <button class="btn" type="submit">Entrar</button>
+      <p class="msg" id="msgLogin" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <!-- Panel -->
+  <div id="vPanel" hidden style="display:flex;flex-direction:column;gap:18px">
+    <div class="barra">
+      <div class="campo"><label for="admFecha">Día</label><input type="date" id="admFecha"></div>
+      <button class="btn sec chico" id="btnHoy">Hoy</button>
+      <button class="btn chico empuje" id="btnImprimir">Imprimir lista</button>
+    </div>
+
+    <div class="totales">
+      <div class="tot"><b id="cN">0</b><span>Normal</span></div>
+      <div class="tot"><b id="cH">0</b><span>Hipocalórico</span></div>
+      <div class="tot total"><b id="cT">0</b><span>Total</span></div>
+    </div>
+
+    <section class="ticket">
+      <h2>Agregar persona</h2>
+      <form id="formAgregar" class="form-agregar">
+        <div class="campo">
+          <label for="agNombre">Nombre</label>
+          <input type="text" id="agNombre" list="dlPersonas" maxlength="60" autocomplete="off" placeholder="Empleado, visita, cliente…">
+          <datalist id="dlPersonas"></datalist>
+        </div>
+        <div class="campo">
+          <label for="agCC">Centro de costo</label>
+          <input type="text" id="agCC" maxlength="30" autocomplete="off">
+        </div>
+        <div class="tipos" role="radiogroup" aria-label="Menú">
+          <div class="opcion compacta"><input type="radio" name="agTipo" id="agNormal" value="Normal" checked><label for="agNormal"><b>Normal</b></label></div>
+          <div class="opcion compacta"><input type="radio" name="agTipo" id="agHipo" value="Hipocalórico"><label for="agHipo"><b>Hipocalórico</b></label></div>
+        </div>
+        <div class="acciones">
+          <button class="btn chico" type="submit" id="btnAgregar">Agregar al día</button>
+          <p class="msg" id="msgAgregar" aria-live="polite"></p>
+        </div>
+      </form>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:10px">
+      <h2 id="tituloLista">Anotados</h2>
+      <div class="tabla">
+        <table>
+          <thead><tr><th>Nombre</th><th>C. costo</th><th>Menú</th><th>Aviso</th><th></th></tr></thead>
+          <tbody id="tbLista"></tbody>
+        </table>
+      </div>
+      <p class="msg" id="msgLista" aria-live="polite"></p>
+    </section>
+  </div>
+
+  <footer>
+    <a class="link" href="index.html">Ir a la app de usuarios</a>
+    <button class="link" id="btnSalir" hidden>Salir</button>
+  </footer>
+</div>
+
+<!-- Hoja para firmar: solo aparece al imprimir -->
+<div id="hoja" class="solo-print">
+  <table>
+    <thead>
+      <tr class="titulo"><th colspan="5">
+        <div class="t">Registro de almuerzos · Casino</div>
+        <div class="d"><b id="hFecha"></b><span id="hTotales"></span></div>
+      </th></tr>
+      <tr class="cols"><th class="n">N°</th><th>Nombre</th><th class="cc">Centro de costo</th><th class="m">Menú</th><th class="f">Firma</th></tr>
+    </thead>
+    <tbody id="hBody"></tbody>
+  </table>
+</div>
+
+<script src="comun.js"></script>
+<script>
+const FILAS_EN_BLANCO = 5;
+let clave = store.get('casino_clave') || '';
+let personas = [], timer;
+
+const fechaSel = () => $('admFecha').value || ahoraStgo().fecha;
+function nota(id,t,tipo){ const el=$(id); el.textContent=t||''; el.classList.toggle('err',tipo==='err'); el.classList.toggle('ok',tipo==='ok') }
+
+/* ---------- Clave ---------- */
+function mostrarLogin(error){
+  clearInterval(timer);
+  $('vLogin').hidden=false; $('vPanel').hidden=true; $('btnSalir').hidden=true;
+  nota('msgLogin', error||'', error?'err':'');
+  $('txtClave').focus();
+}
+$('formLogin').onsubmit=async e=>{
+  e.preventDefault();
+  const c=$('txtClave').value; if(!c) return;
+  nota('msgLogin','Verificando…');
+  try{ await apiAdmin('verificar',{clave:c}); clave=c; store.set('casino_clave',c); $('txtClave').value=''; mostrarPanel() }
+  catch(err){ nota('msgLogin',err.message,'err') }
+};
+$('btnSalir').onclick=()=>{ store.del('casino_clave'); clave=''; mostrarLogin() };
+
+/* ---------- Panel ---------- */
+function mostrarPanel(){
+  $('vLogin').hidden=true; $('vPanel').hidden=false; $('btnSalir').hidden=false;
+  if(!$('admFecha').value) $('admFecha').value=ahoraStgo().fecha;
+  cargar();
+  clearInterval(timer); timer=setInterval(cargar,60000);   // se refresca solo cada minuto
+}
+$('admFecha').onchange=cargar;
+$('btnHoy').onclick=()=>{ $('admFecha').value=ahoraStgo().fecha; cargar() };
+
+async function cargar(){
+  const f=fechaSel();
+  $('titulo').textContent=fechaLarga(f,false);
+  try{
+    const r=await apiAdmin('lista',{clave,fecha:f});
+    personas=r.personas||[];
+    $('dlPersonas').replaceChildren(...personas.map(p=>new Option(p.nombre)));
+    pintar(r.filas.sort(porNombre), f);
+    nota('msgLista',`Actualizado ${ahoraStgo().hora}. Se refresca solo cada minuto.`);
+  }catch(err){
+    if(/clave/i.test(err.message)){ store.del('casino_clave'); clave=''; mostrarLogin(err.message); return }
+    nota('msgLista',err.message,'err');
+  }
+}
+
+function td(tr,contenido,cls){ const c=document.createElement('td'); if(cls) c.className=cls;
+  if(contenido instanceof Node) c.append(contenido); else c.textContent=contenido; tr.append(c); return c }
+function chip(txt,cls){ const s=document.createElement('span'); s.className='chip '+cls; s.textContent=txt; return s }
+
+function pintar(filas, f){
+  const n=filas.filter(x=>x.tipo==='Normal').length, h=filas.length-n;
+  $('cN').textContent=n; $('cH').textContent=h; $('cT').textContent=filas.length;
+  $('tituloLista').textContent=`Anotados (${filas.length})`;
+
+  // Tabla de trabajo
+  const tb=$('tbLista'); tb.replaceChildren();
+  if(!filas.length){ const tr=document.createElement('tr'); const c=td(tr,'Nadie anotado para este día.','vacio'); c.colSpan=5; tb.append(tr) }
+  filas.forEach(x=>{
+    const tr=document.createElement('tr');
+    td(tr,x.nombre); td(tr,x.cc||'—');
+    td(tr,chip(x.tipo,x.tipo==='Normal'?'N':'H'));
+    td(tr, x.origen==='Secretaria' ? chip('Agregado por ti','S') : x.tarde ? chip(`${x.hora} · tarde`,'T') : x.hora);
+    const b=document.createElement('button'); b.className='quitar'; b.textContent='Quitar';
+    b.onclick=()=>quitar(b,x.nombre); td(tr,b); tb.append(tr);
+  });
+
+  // Hoja para firmar
+  $('hFecha').textContent=fechaLarga(f);
+  $('hTotales').textContent=`Normal ${n} · Hipocalórico ${h} · Total ${filas.length}`;
+  const hb=$('hBody'); hb.replaceChildren();
+  filas.forEach((x,i)=>{ const tr=document.createElement('tr');
+    td(tr,i+1,'n'); td(tr,x.nombre); td(tr,x.cc,'cc'); td(tr,x.tipo,'m'); td(tr,'','f'); hb.append(tr) });
+  for(let i=0;i<FILAS_EN_BLANCO;i++){ const tr=document.createElement('tr');
+    td(tr,filas.length+i+1,'n'); td(tr,''); td(tr,'','cc'); td(tr,'','m'); td(tr,'','f'); hb.append(tr) }
+}
+
+/* Quitar en dos toques, sin ventanas emergentes */
+async function quitar(btn,nombre){
+  if(!btn.classList.contains('confirmar')){
+    btn.classList.add('confirmar'); btn.textContent='¿Quitar?';
+    setTimeout(()=>{ btn.classList.remove('confirmar'); btn.textContent='Quitar' },4000);
+    return;
+  }
+  btn.disabled=true;
+  try{ await apiAdmin('quitar',{clave,fecha:fechaSel(),nombre}); nota('msgAgregar',`Quitado: ${nombre}`,'ok'); cargar() }
+  catch(err){ btn.disabled=false; nota('msgLista',err.message,'err') }
+}
+
+/* Agregar persona */
+let ccAuto=false;
+$('agNombre').oninput=()=>{
+  const p=personas.find(p=>p.nombre.toLowerCase()===$('agNombre').value.trim().toLowerCase());
+  if(p && (!$('agCC').value || ccAuto)){ $('agCC').value=p.cc; ccAuto=true }
+  else if(!p && ccAuto){ $('agCC').value=''; ccAuto=false }
+};
+$('agCC').oninput=()=>{ ccAuto=false };
+$('formAgregar').onsubmit=async e=>{
+  e.preventDefault();
+  const nombre=$('agNombre').value.trim().replace(/\s+/g,' ');
+  if(!nombre){ nota('msgAgregar','Escribe un nombre.','err'); $('agNombre').focus(); return }
+  const tipo=document.querySelector('input[name=agTipo]:checked').value;
+  $('btnAgregar').disabled=true; nota('msgAgregar','Guardando…');
+  try{
+    await apiAdmin('agregar',{clave,fecha:fechaSel(),nombre,cc:$('agCC').value.trim(),tipo});
+    nota('msgAgregar',`Agregado: ${nombre}`,'ok');
+    $('agNombre').value=''; $('agCC').value=''; ccAuto=false; $('agNormal').checked=true; $('agNombre').focus();
+    cargar();
+  }catch(err){ nota('msgAgregar',err.message,'err') }
+  $('btnAgregar').disabled=false;
+};
+
+$('btnImprimir').onclick=()=>window.print();
+
+$('demo').hidden=!DEMO;
+clave ? apiAdmin('verificar',{clave}).then(mostrarPanel).catch(err=>/clave/i.test(err.message) ? (store.del('casino_clave'), mostrarLogin(err.message)) : mostrarPanel()) : mostrarLogin();
+</script>
+</body>
+</html>

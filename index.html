@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Asistencia Casino</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+<div class="wrap">
+  <div id="demo" class="demo" hidden><b>Modo demostración.</b> Los datos quedan solo en este dispositivo y los nombres son de ejemplo.</div>
+
+  <header>
+    <span class="eyebrow">Casino · Almuerzo</span>
+    <h1 class="fecha" id="fecha">Hoy</h1>
+    <span class="corte" id="corte"><span class="dot"></span><span id="corteTxt">Corte 10:00</span></span>
+  </header>
+
+  <!-- Paso 1: quién eres -->
+  <section class="ticket vale" id="vQuien" hidden>
+    <h2 class="hola">¿Quién eres?</h2>
+    <p class="msg">Solo se pregunta la primera vez. Este teléfono te recordará.</p>
+    <div class="campo">
+      <label for="selNombre">Busca tu nombre</label>
+      <select id="selNombre"></select>
+    </div>
+    <div class="campo" id="campoOtro" hidden>
+      <label for="txtNombre">Escribe tu nombre y apellido</label>
+      <input type="text" id="txtNombre" maxlength="60" autocomplete="name">
+    </div>
+    <button class="btn" id="btnSoyYo">Continuar</button>
+  </section>
+
+  <!-- Paso 2: anotarse -->
+  <section class="ticket vale" id="vAnotar" hidden>
+    <div class="hola" id="hola">Hola</div>
+    <div id="formAnotar">
+      <div class="opciones" role="radiogroup" aria-label="Tipo de almuerzo">
+        <div class="opcion"><input type="radio" name="tipo" id="tNormal" value="Normal" checked><label for="tNormal"><b>Normal</b><span>Menú del día</span></label></div>
+        <div class="opcion"><input type="radio" name="tipo" id="tHipo" value="Hipocalórico"><label for="tHipo"><b>Hipocalórico</b><span>Opción liviana</span></label></div>
+      </div>
+      <button class="btn" id="btnAnotar" style="margin-top:14px">Voy a almorzar</button>
+    </div>
+    <div id="anotado" hidden>
+      <div class="estado" id="estadoBox">
+        <span class="eyebrow">Anotado</span>
+        <span class="big" id="estadoTipo">Normal</span>
+        <span id="estadoHora" class="msg" style="color:inherit"></span>
+      </div>
+      <div class="fila" style="margin-top:12px">
+        <button class="btn sec" id="btnCambiar">Cambiar opción</button>
+        <button class="btn sec" id="btnCancelar">No voy a almorzar</button>
+      </div>
+    </div>
+    <p id="cerrado" class="msg" hidden>Hoy no hay servicio de casino.</p>
+    <p class="msg" id="msg" aria-live="polite"></p>
+  </section>
+
+  <footer>
+    <button class="link" id="btnPersona" hidden>No soy yo</button>
+  </footer>
+</div>
+
+<script src="comun.js"></script>
+<script>
+let yo = store.get('casino_nombre');
+
+function pintarFecha(){
+  $('fecha').textContent = fechaLarga(ahoraStgo().fecha, false);
+  const t=ahoraStgo(), c=$('corte');
+  c.classList.remove('tarde','cerrado');
+  if(t.finde){ c.classList.add('cerrado'); $('corteTxt').textContent='Fin de semana'; return }
+  const resto=MIN_CORTE-t.min;
+  if(resto>0){ const h=Math.floor(resto/60), m=resto%60; $('corteTxt').textContent=`Corte ${CONFIG.HORA_CORTE} · faltan ${h?h+' h ':''}${m} min` }
+  else { c.classList.add('tarde'); $('corteTxt').textContent=`Pasó el corte de las ${CONFIG.HORA_CORTE} · se avisa como tarde` }
+}
+function msg(t,err){ $('msg').textContent=t||''; $('msg').classList.toggle('err',!!err) }
+
+async function mostrarQuien(){
+  $('vQuien').hidden=false; $('vAnotar').hidden=true; $('btnPersona').hidden=true;
+  const sel=$('selNombre'); sel.innerHTML='<option value="">Cargando…</option>';
+  try{
+    const {personas}=await api('personas');
+    sel.replaceChildren(new Option('— Elige —',''), ...personas.map(n=>new Option(n,n)), new Option('No aparezco en la lista','__otro'));
+  }catch(e){ sel.replaceChildren(new Option('Escribir mi nombre','__otro')) }
+  sel.onchange();
+}
+$('selNombre').onchange=()=>{ $('campoOtro').hidden=$('selNombre').value!=='__otro' };
+$('btnSoyYo').onclick=()=>{
+  const v=$('selNombre').value==='__otro' ? $('txtNombre').value.trim() : $('selNombre').value;
+  if(!v) return;
+  yo=v; store.set('casino_nombre',v); mostrarAnotar();
+};
+$('btnPersona').onclick=()=>{ store.del('casino_nombre'); yo=null; mostrarQuien() };
+
+function pintarEstado(ins){
+  const t=ahoraStgo();
+  $('cerrado').hidden=!t.finde || !!ins;
+  $('formAnotar').hidden=!!ins || t.finde;
+  $('anotado').hidden=!ins;
+  if(!ins) return;
+  $('estadoTipo').textContent=ins.tipo;
+  $('estadoBox').classList.toggle('tarde',!!ins.tarde);
+  $('estadoHora').textContent = ins.origen==='Secretaria' ? 'La secretaria te dejó anotado.'
+    : ins.tarde ? `Avisaste a las ${ins.hora}, después del corte. La cocina lo verá aparte.`
+    : `Avisaste a las ${ins.hora}. Estás en la lista de la cocina.`;
+  (ins.tipo==='Hipocalórico'?$('tHipo'):$('tNormal')).checked=true;
+}
+async function mostrarAnotar(){
+  $('vQuien').hidden=true; $('vAnotar').hidden=false; $('btnPersona').hidden=false;
+  $('hola').textContent=`Hola, ${yo.replace(/^Ejemplo: /,'').split(' ')[0]}`;
+  msg('Revisando…');
+  try{ const {inscripcion}=await api('estado',{nombre:yo}); pintarEstado(inscripcion); msg('') }
+  catch(e){ pintarEstado(null); msg(e.message,true) }
+}
+$('btnAnotar').onclick=async()=>{
+  const tipo=document.querySelector('input[name=tipo]:checked').value;
+  $('btnAnotar').disabled=true; msg('Guardando…');
+  try{ const {inscripcion}=await api('anotar',{nombre:yo,tipo}); $('btnAnotar').textContent='Voy a almorzar'; pintarEstado(inscripcion); msg('') }
+  catch(e){ msg(e.message,true) }
+  $('btnAnotar').disabled=false;
+};
+$('btnCambiar').onclick=()=>{ $('anotado').hidden=true; $('formAnotar').hidden=false; $('btnAnotar').textContent='Guardar cambio'; msg('') };
+$('btnCancelar').onclick=async()=>{
+  msg('Quitando…');
+  try{ await api('cancelar',{nombre:yo}); pintarEstado(null); msg('Listo, no estás en la lista de hoy.') }
+  catch(e){ msg(e.message,true) }
+};
+
+$('demo').hidden=!DEMO;
+pintarFecha(); setInterval(pintarFecha,30000);
+yo ? mostrarAnotar() : mostrarQuien();
+</script>
+</body>
+</html>
