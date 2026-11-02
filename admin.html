@@ -237,8 +237,10 @@ function pintar(filas, f){
   $('hFecha').textContent=fechaLarga(f);
   $('hTotales').textContent=`Normal ${n} · Hipocalórico ${h} · Total ${filas.length}`;
   const hb=$('hBody'); hb.replaceChildren();
-  filas.forEach((x,i)=>{ const tr=document.createElement('tr');
-    td(tr,i+1,'n'); td(tr,x.nombre); td(tr,x.cc,'cc'); td(tr,x.tipo,'m'); td(tr,'','f'); hb.append(tr) });
+  const enHoja=filas.map(x=>({...x, impreso:x.nombreLista||x.nombre}))
+    .sort((a,b)=>a.impreso.localeCompare(b.impreso,'es'));       // ordenada por apellido
+  enHoja.forEach((x,i)=>{ const tr=document.createElement('tr');
+    td(tr,i+1,'n'); td(tr,x.impreso); td(tr,x.cc,'cc'); td(tr,x.tipo,'m'); td(tr,'','f'); hb.append(tr) });
   for(let i=0;i<FILAS_EN_BLANCO;i++){ const tr=document.createElement('tr');
     td(tr,filas.length+i+1,'n'); td(tr,''); td(tr,'','cc'); td(tr,'','m'); td(tr,'','f'); hb.append(tr) }
 }

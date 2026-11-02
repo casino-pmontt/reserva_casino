@@ -62,8 +62,8 @@ function errorDe(m){
 /* ---------- Modo demostración: imita la planilla en este navegador ---------- */
 const DEMO_CLAVE='1234';
 const DEMO_PERSONAS=[
-  {nombre:'Ejemplo: Ana Soto',cc:'LAB-210',codigo:'K7P2QX',correo:'ana.soto@ejemplo.cl'},{nombre:'Ejemplo: Luis Vera',cc:'MAN-330',codigo:'H4NB8R',correo:'luis.vera@ejemplo.cl'},
-  {nombre:'Ejemplo: Marta Díaz',cc:'ADM-100',codigo:'WD3JMA',correo:''},{nombre:'Ejemplo: Pedro Ruiz',cc:'PRO-420',codigo:'T9CQ5E'}];
+  {nombre:'Ejemplo: Ana Soto',cc:'LAB-210',codigo:'K7P2QX',correo:'ana.soto@ejemplo.cl',nombreLista:'Soto Rojas Ana (ejemplo)'},{nombre:'Ejemplo: Luis Vera',cc:'MAN-330',codigo:'H4NB8R',correo:'luis.vera@ejemplo.cl',nombreLista:'Vera Díaz Luis (ejemplo)'},
+  {nombre:'Ejemplo: Marta Díaz',cc:'ADM-100',codigo:'WD3JMA',correo:'',nombreLista:'Díaz Muñoz Marta (ejemplo)'},{nombre:'Ejemplo: Pedro Ruiz',cc:'PRO-420',codigo:'T9CQ5E'}];
 function demoTodas(){ try{ return JSON.parse(store.get('casino_demo3')||'[]') }catch(e){ return [] } }
 function demoGuardar(fecha,nombre,fila){
   const t=demoTodas().filter(x=>!(x.fecha===fecha && x.nombre.toLowerCase()===nombre.toLowerCase()));
@@ -86,7 +86,7 @@ function demoAdmin(accion,p){
   const f=p.fecha||ahoraStgo().fecha;
   if(accion==='verificar') return {ok:true};
   if(accion==='lista'){ const cc=Object.fromEntries(DEMO_PERSONAS.map(x=>[x.nombre.toLowerCase(),x.cc]));
-    return {fecha:f,corte:demoCorte(),personas:DEMO_PERSONAS,filas:demoDelDia(f).map(x=>({...x,cc:x.cc||cc[x.nombre.toLowerCase()]||''}))} }
+    return {fecha:f,corte:demoCorte(),personas:DEMO_PERSONAS,filas:demoDelDia(f).map(x=>{ const p=DEMO_PERSONAS.find(q=>q.nombre.toLowerCase()===x.nombre.toLowerCase()); return {...x,cc:x.cc||cc[x.nombre.toLowerCase()]||'',nombreLista:(p&&p.nombreLista)||x.nombre} })} }
   if(accion==='agregar'){ demoGuardar(f,p.nombre,{fecha:f,nombre:p.nombre,tipo:p.tipo,hora:ahoraStgo().hora,tarde:false,origen:'Administración',cc:p.cc||''}); return {ok:true} }
   if(accion==='quitar'){ demoGuardar(f,p.nombre,null); return {ok:true} }
   if(accion==='corte'){ const m=String(p.hora||'').match(/^(\d{1,2})[:.](\d{2})$/);
