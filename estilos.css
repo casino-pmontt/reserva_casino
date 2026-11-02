@@ -92,7 +92,7 @@ button{font:inherit;cursor:pointer}
 .msg{font-size:14px;color:var(--muted);min-height:1.2em;margin:0}
 .msg.err{color:var(--danger)}
 .msg.ok{color:var(--ok)}
-select,input[type=text],input[type=password],input[type=date]{font:inherit;width:100%;padding:12px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--fg)}
+select,input[type=text],input[type=password],input[type=date],input[type=time]{font:inherit;width:100%;padding:12px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--fg)}
 .campo{display:flex;flex-direction:column;gap:6px;min-width:0}
 .campo label{font-weight:700;font-size:15px}
 footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:14px;color:var(--muted)}
@@ -134,6 +134,9 @@ details.personal .cuerpo{display:flex;flex-direction:column;gap:12px;padding:0 1
 details.personal .tabla{border-radius:10px}
 .copiar{background:var(--accent);color:var(--accent-fg);border:0;border-radius:8px;padding:6px 12px;font-size:14px;font-weight:700;white-space:nowrap}
 .copiar.hecho{background:var(--ok)}
+.ajuste{display:flex;gap:12px;align-items:end;flex-wrap:wrap}
+.ajuste .campo{flex:0 1 180px}
+.ajuste .btn{flex:0 0 auto}
 .acc{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .correo{display:inline-block;border:1.5px solid var(--accent);color:var(--accent-ink);background:var(--card);border-radius:8px;padding:5px 11px;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap}
 .correo:hover{background:color-mix(in srgb,var(--accent) 8%,var(--card))}

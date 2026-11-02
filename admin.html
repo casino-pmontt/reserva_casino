@@ -109,6 +109,20 @@
         </div>
       </div>
     </details>
+
+    <details class="personal" id="secAjustes">
+      <summary>Ajustes <span id="resumenAjustes"></span></summary>
+      <div class="cuerpo">
+        <form id="formCorte" class="ajuste">
+          <div class="campo">
+            <label for="admCorte">Hora de corte</label>
+            <input type="time" id="admCorte" step="300" required>
+          </div>
+          <button class="btn chico" type="submit" id="btnCorte">Guardar</button>
+        </form>
+        <p class="msg" id="msgCorte" aria-live="polite">Hasta esta hora el personal se anota normal; después queda marcado como tarde. El cambio rige desde que lo guardas y no modifica a quienes ya se anotaron.</p>
+      </div>
+    </details>
   </div>
 
   <footer>
@@ -187,6 +201,7 @@ async function cargar(){
   try{
     const r=await apiAdmin('lista',{clave,fecha:f});
     personas=r.personas||[];
+    if(r.corte){ $('resumenAjustes').textContent=`· corte ${r.corte}`; if(document.activeElement!==$('admCorte')) $('admCorte').value=r.corte }
     $('dlPersonas').replaceChildren(...personas.map(p=>new Option(p.nombre)));
     pintar(r.filas.sort(porNombre), f);
     pintarPersonal();
@@ -306,6 +321,19 @@ function botonCorreo(p){
   return a;
 }
 $('buscaPersona').oninput=pintarPersonal;
+
+/* Hora de corte */
+$('formCorte').onsubmit=async e=>{
+  e.preventDefault();
+  const h=$('admCorte').value; if(!h) return;
+  $('btnCorte').disabled=true; nota('msgCorte','Guardando…');
+  try{
+    const r=await apiAdmin('corte',{clave,hora:h});
+    $('admCorte').value=r.corte; $('resumenAjustes').textContent=`· corte ${r.corte}`;
+    nota('msgCorte',`Listo: el corte ahora es a las ${r.corte}. El personal lo verá al abrir o actualizar la app.`,'ok');
+  }catch(err){ nota('msgCorte',err.message,'err') }
+  $('btnCorte').disabled=false;
+};
 async function copiar(btn,texto){
   $('respaldoBox').hidden=true;
   try{

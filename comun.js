@@ -1,7 +1,7 @@
 /* ===== CONFIGURACIÓN (solo se toca aquí) ===== */
 const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbyXVpCYD7nJHTySUPfN0az-JDOWFoJQxARbTzBxmW-gPFIwF2z-Yqy7juc1hC_02PdL6A/exec', // URL de la app web de Apps Script (termina en /exec). Vacía = modo demostración
-  HORA_CORTE: '10:00',      // debe coincidir con Code.gs
+  HORA_CORTE: '10:00',      // solo valor inicial: la hora real la define la secretaria desde su página
   TZ: 'America/Santiago'
 };
 /* ============================================= */
@@ -20,7 +20,10 @@ function ahoraStgo(){
     .formatToParts(new Date()).map(x=>[x.type,x.value]));
   return { fecha:`${p.year}-${p.month}-${p.day}`, hora:`${p.hour}:${p.minute}`, min:+p.hour*60 + +p.minute, finde:['Sat','Sun'].includes(p.weekday) };
 }
-const MIN_CORTE = (()=>{ const [h,m]=CONFIG.HORA_CORTE.split(':'); return +h*60 + +m })();
+/* Hora de corte vigente: llega desde la planilla en cada respuesta y se recuerda en el dispositivo */
+let corteActual = /^\d{2}:\d{2}$/.test(store.get('casino_corte')||'') ? store.get('casino_corte') : CONFIG.HORA_CORTE;
+function fijarCorte(h){ if(/^\d{2}:\d{2}$/.test(h||'')){ corteActual=h; store.set('casino_corte',h) } }
+function minCorte(){ const [h,m]=corteActual.split(':'); return +h*60 + +m }
 
 /* "2026-10-28" → "miércoles 28 de octubre de 2026" */
 function fechaLarga(f, conAnio=true){
@@ -67,13 +70,14 @@ function demoGuardar(fecha,nombre,fila){
   if(fila) t.push(fila); store.set('casino_demo3',JSON.stringify(t));
 }
 function demoDelDia(f){ return demoTodas().filter(x=>x.fecha===f) }
+function demoCorte(){ return store.get('casino_demo_corte')||CONFIG.HORA_CORTE }
 function demo(accion,p){
   const yo=DEMO_PERSONAS.find(x=>x.codigo===normCodigo(p.codigo));
   if(!yo) throw errorDe('CODIGO: Código no encontrado. Revísalo en tu mensaje o pídeselo a la secretaria.');
   const t=ahoraStgo(), mio=x=>x.nombre===yo.nombre;
-  if(accion==='entrar') return {nombre:yo.nombre};
-  if(accion==='estado') return {nombre:yo.nombre,inscripcion:demoDelDia(t.fecha).find(mio)||null};
-  if(accion==='anotar'){ const r={fecha:t.fecha,nombre:yo.nombre,tipo:p.tipo,hora:t.hora,tarde:t.min>MIN_CORTE,origen:'App',cc:''}; demoGuardar(t.fecha,yo.nombre,r); return {ok:true,nombre:yo.nombre,inscripcion:r} }
+  if(accion==='entrar') return {nombre:yo.nombre,corte:demoCorte()};
+  if(accion==='estado') return {nombre:yo.nombre,corte:demoCorte(),inscripcion:demoDelDia(t.fecha).find(mio)||null};
+  if(accion==='anotar'){ const r={fecha:t.fecha,nombre:yo.nombre,tipo:p.tipo,hora:t.hora,tarde:t.hora>demoCorte(),origen:'App',cc:''}; demoGuardar(t.fecha,yo.nombre,r); return {ok:true,nombre:yo.nombre,corte:demoCorte(),inscripcion:r} }
   if(accion==='cancelar'){ demoGuardar(t.fecha,yo.nombre,null); return {ok:true} }
   throw new Error('Acción desconocida');
 }
@@ -82,9 +86,12 @@ function demoAdmin(accion,p){
   const f=p.fecha||ahoraStgo().fecha;
   if(accion==='verificar') return {ok:true};
   if(accion==='lista'){ const cc=Object.fromEntries(DEMO_PERSONAS.map(x=>[x.nombre.toLowerCase(),x.cc]));
-    return {fecha:f,personas:DEMO_PERSONAS,filas:demoDelDia(f).map(x=>({...x,cc:x.cc||cc[x.nombre.toLowerCase()]||''}))} }
+    return {fecha:f,corte:demoCorte(),personas:DEMO_PERSONAS,filas:demoDelDia(f).map(x=>({...x,cc:x.cc||cc[x.nombre.toLowerCase()]||''}))} }
   if(accion==='agregar'){ demoGuardar(f,p.nombre,{fecha:f,nombre:p.nombre,tipo:p.tipo,hora:ahoraStgo().hora,tarde:false,origen:'Secretaria',cc:p.cc||''}); return {ok:true} }
   if(accion==='quitar'){ demoGuardar(f,p.nombre,null); return {ok:true} }
+  if(accion==='corte'){ const m=String(p.hora||'').match(/^(\d{1,2})[:.](\d{2})$/);
+    if(!m||+m[1]>23||+m[2]>59) throw new Error('Hora no válida. Usa el formato 10:00');
+    const v=('0'+ +m[1]).slice(-2)+':'+m[2]; store.set('casino_demo_corte',v); return {ok:true,corte:v} }
   throw new Error('Acción desconocida');
 }
 

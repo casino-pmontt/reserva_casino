@@ -25,7 +25,7 @@
     </div>
     <span class="eyebrow">Casino · Almuerzo</span>
     <h1 class="fecha" id="fecha">Hoy</h1>
-    <span class="corte" id="corte"><span class="dot"></span><span id="corteTxt">Corte 10:00</span></span>
+    <span class="corte" id="corte"><span class="dot"></span><span id="corteTxt">Corte</span></span>
   </header>
 
   <!-- Primera vez: código -->
@@ -82,9 +82,9 @@ function pintarFecha(){
   const t=ahoraStgo(), c=$('corte');
   c.classList.remove('tarde','cerrado');
   if(t.finde){ c.classList.add('cerrado'); $('corteTxt').textContent='Fin de semana'; return }
-  const resto=MIN_CORTE-t.min;
-  if(resto>0){ const h=Math.floor(resto/60), m=resto%60; $('corteTxt').textContent=`Corte ${CONFIG.HORA_CORTE} · faltan ${h?h+' h ':''}${m} min` }
-  else { c.classList.add('tarde'); $('corteTxt').textContent=`Pasó el corte de las ${CONFIG.HORA_CORTE} · se avisa como tarde` }
+  const resto=minCorte()-t.min;
+  if(resto>0){ const h=Math.floor(resto/60), m=resto%60; $('corteTxt').textContent=`Corte ${corteActual} · faltan ${h?h+' h ':''}${m} min` }
+  else { c.classList.add('tarde'); $('corteTxt').textContent=`Pasó el corte de las ${corteActual} · se avisa como tarde` }
 }
 function msg(t,err){ $('msg').textContent=t||''; $('msg').classList.toggle('err',!!err) }
 function msgCodigo(t,err){ $('msgCodigo').textContent=t||''; $('msgCodigo').classList.toggle('err',!!err) }
@@ -101,7 +101,7 @@ async function entrar(c){
   if(c.length<4){ msgCodigo('Revisa el código: son 6 letras y números.',true); return }
   $('btnEntrar').disabled=true; msgCodigo('Revisando…');
   try{
-    const r=await api('entrar',{codigo:c});
+    const r=await api('entrar',{codigo:c}); fijarCorte(r.corte); pintarFecha();
     codigo=c; store.set('casino_codigo',c); store.set('casino_saludo',r.nombre);
     $('txtCodigo').value=''; mostrarAnotar(r.nombre);
   }catch(e){ mostrarCodigo(e.message) }
@@ -133,7 +133,7 @@ async function mostrarAnotar(nombre){
   if(nombre) $('hola').textContent=`Hola, ${primerNombre(nombre)}`;
   msg('Revisando…');
   try{
-    const r=await api('estado',{codigo});
+    const r=await api('estado',{codigo}); fijarCorte(r.corte); pintarFecha();
     store.set('casino_saludo',r.nombre); $('hola').textContent=`Hola, ${primerNombre(r.nombre)}`;
     pintarEstado(r.inscripcion); msg('');
   }catch(e){ if(!siCodigoInvalido(e)){ pintarEstado(null); msg(e.message,true) } }
@@ -141,7 +141,7 @@ async function mostrarAnotar(nombre){
 $('btnAnotar').onclick=async()=>{
   const tipo=document.querySelector('input[name=tipo]:checked').value;
   $('btnAnotar').disabled=true; msg('Guardando…');
-  try{ const {inscripcion}=await api('anotar',{codigo,tipo}); $('btnAnotar').textContent='Voy a almorzar'; pintarEstado(inscripcion); msg('') }
+  try{ const {inscripcion,corte}=await api('anotar',{codigo,tipo}); fijarCorte(corte); pintarFecha(); $('btnAnotar').textContent='Voy a almorzar'; pintarEstado(inscripcion); msg('') }
   catch(e){ if(!siCodigoInvalido(e)) msg(e.message,true) }
   $('btnAnotar').disabled=false;
 };
