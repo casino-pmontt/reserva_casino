@@ -29,41 +29,52 @@ function fechaLarga(f, conAnio=true){
   return new Intl.DateTimeFormat('es-CL',o).format(new Date(Date.UTC(y,m-1,d)));
 }
 const porNombre = (a,b)=>a.nombre.localeCompare(b.nombre,'es');
+const normCodigo = c => String(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 
-/* ---------- Conexión con la planilla ---------- */
-async function api(accion, params={}){            // app de usuarios
+/* ---------- Conexión con la planilla ----------
+   Todo va por POST con texto plano: no aparece en la URL ni en el historial.
+   Un error de código inválido llega con err.codigo = true.                     */
+async function api(accion, params={}){            // app del personal (lleva el código)
   if(DEMO) return demo(accion, params);
-  const u=new URL(CONFIG.API_URL); u.searchParams.set('accion',accion);
-  for(const [k,v] of Object.entries(params)) u.searchParams.set(k,v);
-  return leer(await fetch(u,{redirect:'follow'}));
+  return enviar({accion, ...params});
 }
-async function apiAdmin(accion, params={}){       // administración: la clave va en el cuerpo, no en la URL
+async function apiAdmin(accion, params={}){       // secretaria (lleva la clave)
   if(DEMO) return demoAdmin(accion, params);
-  const r=await fetch(CONFIG.API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({accion,...params})});
-  return leer(r);
+  return enviar({accion, ...params});
 }
-async function leer(r){
-  if(!r.ok) throw new Error('No hay conexión con la planilla. Revisa internet e intenta de nuevo.');
-  const j=await r.json(); if(j.error) throw new Error(j.error); return j;
+async function enviar(cuerpo){
+  let r;
+  try{ r=await fetch(CONFIG.API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(cuerpo)}) }
+  catch(e){ throw new Error('No hay conexión. Revisa internet e intenta de nuevo.') }
+  if(!r.ok) throw new Error('La planilla no respondió. Intenta de nuevo en un momento.');
+  const j=await r.json();
+  if(j.error) throw errorDe(j.error);
+  return j;
+}
+function errorDe(m){
+  const e=new Error(String(m).replace(/^CODIGO:\s*/,''));
+  e.codigo=/^CODIGO:/.test(m); return e;
 }
 
 /* ---------- Modo demostración: imita la planilla en este navegador ---------- */
 const DEMO_CLAVE='1234';
 const DEMO_PERSONAS=[
-  {nombre:'Ejemplo: Ana Soto',cc:'LAB-210'},{nombre:'Ejemplo: Luis Vera',cc:'MAN-330'},
-  {nombre:'Ejemplo: Marta Díaz',cc:'ADM-100'},{nombre:'Ejemplo: Pedro Ruiz',cc:'PRO-420'}];
-function demoTodas(){ try{ return JSON.parse(store.get('casino_demo2')||'[]') }catch(e){ return [] } }
+  {nombre:'Ejemplo: Ana Soto',cc:'LAB-210',codigo:'K7P2QX',correo:'ana.soto@ejemplo.cl'},{nombre:'Ejemplo: Luis Vera',cc:'MAN-330',codigo:'H4NB8R',correo:'luis.vera@ejemplo.cl'},
+  {nombre:'Ejemplo: Marta Díaz',cc:'ADM-100',codigo:'WD3JMA',correo:''},{nombre:'Ejemplo: Pedro Ruiz',cc:'PRO-420',codigo:'T9CQ5E'}];
+function demoTodas(){ try{ return JSON.parse(store.get('casino_demo3')||'[]') }catch(e){ return [] } }
 function demoGuardar(fecha,nombre,fila){
   const t=demoTodas().filter(x=>!(x.fecha===fecha && x.nombre.toLowerCase()===nombre.toLowerCase()));
-  if(fila) t.push(fila); store.set('casino_demo2',JSON.stringify(t));
+  if(fila) t.push(fila); store.set('casino_demo3',JSON.stringify(t));
 }
 function demoDelDia(f){ return demoTodas().filter(x=>x.fecha===f) }
 function demo(accion,p){
-  const t=ahoraStgo(), mio=x=>x.nombre.toLowerCase()===String(p.nombre||'').toLowerCase();
-  if(accion==='personas') return {personas:DEMO_PERSONAS.map(x=>x.nombre)};
-  if(accion==='estado') return {inscripcion:demoDelDia(t.fecha).find(mio)||null};
-  if(accion==='anotar'){ const r={fecha:t.fecha,nombre:p.nombre,tipo:p.tipo,hora:t.hora,tarde:t.min>MIN_CORTE,origen:'App',cc:''}; demoGuardar(t.fecha,p.nombre,r); return {ok:true,inscripcion:r} }
-  if(accion==='cancelar'){ demoGuardar(t.fecha,p.nombre,null); return {ok:true} }
+  const yo=DEMO_PERSONAS.find(x=>x.codigo===normCodigo(p.codigo));
+  if(!yo) throw errorDe('CODIGO: Código no encontrado. Revísalo en tu mensaje o pídeselo a la secretaria.');
+  const t=ahoraStgo(), mio=x=>x.nombre===yo.nombre;
+  if(accion==='entrar') return {nombre:yo.nombre};
+  if(accion==='estado') return {nombre:yo.nombre,inscripcion:demoDelDia(t.fecha).find(mio)||null};
+  if(accion==='anotar'){ const r={fecha:t.fecha,nombre:yo.nombre,tipo:p.tipo,hora:t.hora,tarde:t.min>MIN_CORTE,origen:'App',cc:''}; demoGuardar(t.fecha,yo.nombre,r); return {ok:true,nombre:yo.nombre,inscripcion:r} }
+  if(accion==='cancelar'){ demoGuardar(t.fecha,yo.nombre,null); return {ok:true} }
   throw new Error('Acción desconocida');
 }
 function demoAdmin(accion,p){
@@ -76,3 +87,16 @@ function demoAdmin(accion,p){
   if(accion==='quitar'){ demoGuardar(f,p.nombre,null); return {ok:true} }
   throw new Error('Acción desconocida');
 }
+
+/* ---------- Modo claro / oscuro ----------
+   Sin elegir, sigue al teléfono. Al tocar el botón, se recuerda la elección. */
+function temaOscuroAhora(){
+  const t=document.documentElement.getAttribute('data-theme');
+  if(t) return t==='dark';
+  try{ return matchMedia('(prefers-color-scheme: dark)').matches }catch(e){ return false }
+}
+if($('btnTema')) $('btnTema').onclick=()=>{
+  const nuevo=temaOscuroAhora()?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nuevo);
+  store.set('casino_tema',nuevo);
+};

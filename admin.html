@@ -8,6 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<script>try{var t=localStorage.getItem('casino_tema');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
@@ -15,6 +16,14 @@
   <div id="demo" class="demo" hidden><b>Modo demostración.</b> La clave es <b>1234</b>. Los datos quedan solo en este navegador y los nombres son de ejemplo.</div>
 
   <header>
+    <div class="marca">
+      <img class="logo claro" src="logo.png" alt="Skretting" width="480" height="190">
+      <img class="logo oscuro" src="logo-oscuro.png" alt="Skretting" width="480" height="190">
+      <div class="marca-acciones">
+        <button class="tema" id="btnTema" type="button" aria-label="Cambiar entre modo claro y oscuro" title="Modo claro / oscuro"><svg class="ico-luna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg><svg class="ico-sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button>
+        <button class="refrescar" id="btnRefrescar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>Actualizar</button>
+      </div>
+    </div>
     <span class="eyebrow">Casino · Administración</span>
     <h1 class="fecha" id="titulo">Lista del día</h1>
   </header>
@@ -79,6 +88,27 @@
       </div>
       <p class="msg" id="msgLista" aria-live="polite"></p>
     </section>
+
+    <details class="personal" id="secPersonal">
+      <summary>Personal y códigos <span id="cuentaPersonal"></span></summary>
+      <div class="cuerpo">
+        <p class="msg">Cada persona usa su código solo la primera vez. "Copiar mensaje" deja el texto listo para WhatsApp; "✉ Correo" lo abre en Outlook para enviarlo desde tu cuenta. Para cambiar un código, bórralo en la planilla y se crea uno nuevo solo.</p>
+        <div class="campo">
+          <label for="buscaPersona">Buscar</label>
+          <input type="text" id="buscaPersona" autocomplete="off" placeholder="Nombre, centro de costo o correo">
+        </div>
+        <div id="respaldoBox" class="campo" hidden>
+          <label for="respaldo">No se pudo copiar automáticamente. Selecciona y copia este texto:</label>
+          <textarea id="respaldo" class="respaldo" readonly></textarea>
+        </div>
+        <div class="tabla">
+          <table>
+            <thead><tr><th>Nombre</th><th>C. costo</th><th>Código</th><th></th></tr></thead>
+            <tbody id="tbPersonal"></tbody>
+          </table>
+        </div>
+      </div>
+    </details>
   </div>
 
   <footer>
@@ -92,7 +122,7 @@
   <table>
     <thead>
       <tr class="titulo"><th colspan="5">
-        <div class="t">Registro de almuerzos · Casino</div>
+        <div class="cab"><div class="t">Registro de almuerzos · Casino</div><img class="logo-print" src="logo.png" alt="Skretting"></div>
         <div class="d"><b id="hFecha"></b><span id="hTotales"></span></div>
       </th></tr>
       <tr class="cols"><th class="n">N°</th><th>Nombre</th><th class="cc">Centro de costo</th><th class="m">Menú</th><th class="f">Firma</th></tr>
@@ -101,7 +131,7 @@
   </table>
 </div>
 
-<script src="comun.js"></script>
+<script src="comun.js" charset="utf-8"></script>
 <script>
 const FILAS_EN_BLANCO = 5;
 let clave = store.get('casino_clave') || '';
@@ -131,10 +161,25 @@ function mostrarPanel(){
   $('vLogin').hidden=true; $('vPanel').hidden=false; $('btnSalir').hidden=false;
   if(!$('admFecha').value) $('admFecha').value=ahoraStgo().fecha;
   cargar();
-  clearInterval(timer); timer=setInterval(cargar,60000);   // se refresca solo cada minuto
+  clearInterval(timer); timer=setInterval(tick,60000);     // se refresca solo cada minuto
 }
 $('admFecha').onchange=cargar;
 $('btnHoy').onclick=()=>{ $('admFecha').value=ahoraStgo().fecha; cargar() };
+
+/* Si el panel quedó abierto desde ayer y mostraba "hoy", pasa solo al día nuevo */
+let hoyVisto=ahoraStgo().fecha;
+function tick(){
+  const h=ahoraStgo().fecha;
+  if(h!==hoyVisto){ if($('admFecha').value===hoyVisto) $('admFecha').value=h; hoyVisto=h }
+  return cargar();
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && !$('vPanel').hidden) tick() });
+$('btnRefrescar').onclick=async()=>{
+  if($('vPanel').hidden) return;
+  const b=$('btnRefrescar'); b.disabled=true; b.classList.add('girando');
+  await tick();
+  b.disabled=false; b.classList.remove('girando');
+};
 
 async function cargar(){
   const f=fechaSel();
@@ -144,6 +189,7 @@ async function cargar(){
     personas=r.personas||[];
     $('dlPersonas').replaceChildren(...personas.map(p=>new Option(p.nombre)));
     pintar(r.filas.sort(porNombre), f);
+    pintarPersonal();
     nota('msgLista',`Actualizado ${ahoraStgo().hora}. Se refresca solo cada minuto.`);
   }catch(err){
     if(/clave/i.test(err.message)){ store.del('casino_clave'); clave=''; mostrarLogin(err.message); return }
@@ -216,6 +262,60 @@ $('formAgregar').onsubmit=async e=>{
   }catch(err){ nota('msgAgregar',err.message,'err') }
   $('btnAgregar').disabled=false;
 };
+
+/* ---------- Personal y códigos ---------- */
+const URL_APP = new URL('./', location.href).href;   // la app del personal está en la misma carpeta
+function mensajePara(p){
+  const nombre=p.nombre.replace(/^Ejemplo: /,'').split(' ')[0];
+  return `Hola ${nombre}, para anotarte al almuerzo del casino entra a este link (solo la primera vez):\n`+
+         `${URL_APP}?c=${p.codigo}\n\n`+
+         `Tu código es ${p.codigo}. Guárdalo por si la app te lo vuelve a pedir.\n`+
+         `Tip: agrega la página a la pantalla de inicio de tu teléfono.`;
+}
+function pintarPersonal(){
+  $('cuentaPersonal').textContent=`(${personas.length})`;
+  const q=$('buscaPersona').value.trim().toLowerCase();
+  const lista=personas.filter(p=>!q || p.nombre.toLowerCase().includes(q) || (p.cc||'').toLowerCase().includes(q) || (p.correo||'').toLowerCase().includes(q));
+  const tb=$('tbPersonal'); tb.replaceChildren();
+  if(!lista.length){ const tr=document.createElement('tr'); const c=td(tr, personas.length?'Nadie coincide con la búsqueda.':'Agrega personas en la pestaña Personas de la planilla.','vacio'); c.colSpan=4; tb.append(tr) }
+  lista.forEach(p=>{
+    const tr=document.createElement('tr');
+    td(tr,p.nombre); td(tr,p.cc||'—'); td(tr,p.codigo||'…','cod');
+    const acc=document.createElement('span'); acc.className='acc';
+    const b=document.createElement('button'); b.className='copiar'; b.textContent='Copiar mensaje';
+    b.disabled=!p.codigo; b.onclick=()=>copiar(b,mensajePara(p));
+    acc.append(b, botonCorreo(p));
+    td(tr,acc,'der'); tb.append(tr);
+  });
+}
+/* Correo individual: abre Outlook (o el correo predeterminado del PC) con el mensaje listo.
+   La secretaria lo revisa y lo envía desde su propia cuenta. */
+const correoValido = c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c||'');
+function botonCorreo(p){
+  if(!p.codigo || !correoValido(p.correo)){
+    const s=document.createElement('span'); s.className='correo off';
+    s.textContent='✉ Correo'; s.title=p.correo?'El correo de la planilla no es válido':'Sin correo en la planilla (columna D)';
+    return s;
+  }
+  const a=document.createElement('a'); a.className='correo'; a.textContent='✉ Correo';
+  a.title='Abrir en Outlook: '+p.correo;
+  a.href='mailto:'+encodeURIComponent(p.correo)+
+    '?subject='+encodeURIComponent('Tu código para anotarte al casino')+
+    '&body='+encodeURIComponent(mensajePara(p).replace(/\n/g,'\r\n'));
+  a.onclick=()=>{ a.textContent='✉ Abierto ✓'; a.classList.add('hecho'); setTimeout(()=>{ a.textContent='✉ Correo'; a.classList.remove('hecho') },3000) };
+  return a;
+}
+$('buscaPersona').oninput=pintarPersonal;
+async function copiar(btn,texto){
+  $('respaldoBox').hidden=true;
+  try{
+    await navigator.clipboard.writeText(texto);
+    btn.textContent='Copiado ✓'; btn.classList.add('hecho');
+    setTimeout(()=>{ btn.textContent='Copiar mensaje'; btn.classList.remove('hecho') },2500);
+  }catch(e){
+    $('respaldo').value=texto; $('respaldoBox').hidden=false; $('respaldo').focus(); $('respaldo').select();
+  }
+}
 
 $('btnImprimir').onclick=()=>window.print();
 

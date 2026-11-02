@@ -7,34 +7,42 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<script>try{var t=localStorage.getItem('casino_tema');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
 <div class="wrap">
-  <div id="demo" class="demo" hidden><b>Modo demostración.</b> Los datos quedan solo en este dispositivo y los nombres son de ejemplo.</div>
+  <div id="demo" class="demo" hidden><b>Modo demostración.</b> Prueba con el código <b>K7P2QX</b>. Los datos quedan solo en este dispositivo.</div>
 
   <header>
+    <div class="marca">
+      <img class="logo claro" src="logo.png" alt="Skretting" width="480" height="190">
+      <img class="logo oscuro" src="logo-oscuro.png" alt="Skretting" width="480" height="190">
+      <div class="marca-acciones">
+        <button class="tema" id="btnTema" type="button" aria-label="Cambiar entre modo claro y oscuro" title="Modo claro / oscuro"><svg class="ico-luna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg><svg class="ico-sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button>
+        <button class="refrescar" id="btnRefrescar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>Actualizar</button>
+      </div>
+    </div>
     <span class="eyebrow">Casino · Almuerzo</span>
     <h1 class="fecha" id="fecha">Hoy</h1>
     <span class="corte" id="corte"><span class="dot"></span><span id="corteTxt">Corte 10:00</span></span>
   </header>
 
-  <!-- Paso 1: quién eres -->
-  <section class="ticket vale" id="vQuien" hidden>
-    <h2 class="hola">¿Quién eres?</h2>
-    <p class="msg">Solo se pregunta la primera vez. Este teléfono te recordará.</p>
-    <div class="campo">
-      <label for="selNombre">Busca tu nombre</label>
-      <select id="selNombre"></select>
-    </div>
-    <div class="campo" id="campoOtro" hidden>
-      <label for="txtNombre">Escribe tu nombre y apellido</label>
-      <input type="text" id="txtNombre" maxlength="60" autocomplete="name">
-    </div>
-    <button class="btn" id="btnSoyYo">Continuar</button>
+  <!-- Primera vez: código -->
+  <section class="ticket vale" id="vCodigo" hidden>
+    <h2 class="hola">Escribe tu código</h2>
+    <p class="msg">Está en el mensaje que te envió la secretaria. Solo se pide la primera vez.</p>
+    <form id="formCodigo" class="campo" style="gap:14px">
+      <div class="campo">
+        <label for="txtCodigo">Código</label>
+        <input type="text" id="txtCodigo" class="codigo" maxlength="12" autocomplete="one-time-code" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="Ej: K7P2QX">
+      </div>
+      <button class="btn" type="submit" id="btnEntrar">Entrar</button>
+      <p class="msg" id="msgCodigo" aria-live="polite"></p>
+    </form>
   </section>
 
-  <!-- Paso 2: anotarse -->
+  <!-- Anotarse -->
   <section class="ticket vale" id="vAnotar" hidden>
     <div class="hola" id="hola">Hola</div>
     <div id="formAnotar">
@@ -64,9 +72,10 @@
   </footer>
 </div>
 
-<script src="comun.js"></script>
+<script src="comun.js" charset="utf-8"></script>
 <script>
-let yo = store.get('casino_nombre');
+let codigo = store.get('casino_codigo');
+store.del('casino_nombre');                        // dato de la versión anterior
 
 function pintarFecha(){
   $('fecha').textContent = fechaLarga(ahoraStgo().fecha, false);
@@ -78,30 +87,40 @@ function pintarFecha(){
   else { c.classList.add('tarde'); $('corteTxt').textContent=`Pasó el corte de las ${CONFIG.HORA_CORTE} · se avisa como tarde` }
 }
 function msg(t,err){ $('msg').textContent=t||''; $('msg').classList.toggle('err',!!err) }
+function msgCodigo(t,err){ $('msgCodigo').textContent=t||''; $('msgCodigo').classList.toggle('err',!!err) }
+const primerNombre = n => n.replace(/^Ejemplo: /,'').split(' ')[0];
 
-async function mostrarQuien(){
-  $('vQuien').hidden=false; $('vAnotar').hidden=true; $('btnPersona').hidden=true;
-  const sel=$('selNombre'); sel.innerHTML='<option value="">Cargando…</option>';
-  try{
-    const {personas}=await api('personas');
-    sel.replaceChildren(new Option('— Elige —',''), ...personas.map(n=>new Option(n,n)), new Option('No aparezco en la lista','__otro'));
-  }catch(e){ sel.replaceChildren(new Option('Escribir mi nombre','__otro')) }
-  sel.onchange();
+/* ---------- Código ---------- */
+function mostrarCodigo(aviso){
+  codigo=null; store.del('casino_codigo'); store.del('casino_saludo');
+  $('vCodigo').hidden=false; $('vAnotar').hidden=true; $('btnPersona').hidden=true;
+  msgCodigo(aviso||'', !!aviso);
 }
-$('selNombre').onchange=()=>{ $('campoOtro').hidden=$('selNombre').value!=='__otro' };
-$('btnSoyYo').onclick=()=>{
-  const v=$('selNombre').value==='__otro' ? $('txtNombre').value.trim() : $('selNombre').value;
-  if(!v) return;
-  yo=v; store.set('casino_nombre',v); mostrarAnotar();
-};
-$('btnPersona').onclick=()=>{ store.del('casino_nombre'); yo=null; mostrarQuien() };
+async function entrar(c){
+  c=normCodigo(c);
+  if(c.length<4){ msgCodigo('Revisa el código: son 6 letras y números.',true); return }
+  $('btnEntrar').disabled=true; msgCodigo('Revisando…');
+  try{
+    const r=await api('entrar',{codigo:c});
+    codigo=c; store.set('casino_codigo',c); store.set('casino_saludo',r.nombre);
+    $('txtCodigo').value=''; mostrarAnotar(r.nombre);
+  }catch(e){ mostrarCodigo(e.message) }
+  $('btnEntrar').disabled=false;
+}
+$('formCodigo').onsubmit=e=>{ e.preventDefault(); entrar($('txtCodigo').value) };
+$('btnPersona').onclick=()=>mostrarCodigo();
 
+/* ---------- Anotarse ---------- */
+function siCodigoInvalido(e){
+  if(e.codigo){ mostrarCodigo('Tu código cambió o ya no es válido. Escribe el nuevo que te envió la secretaria.'); return true }
+  return false;
+}
 function pintarEstado(ins){
   const t=ahoraStgo();
   $('cerrado').hidden=!t.finde || !!ins;
   $('formAnotar').hidden=!!ins || t.finde;
   $('anotado').hidden=!ins;
-  if(!ins) return;
+  if(!ins){ $('btnAnotar').textContent='Voy a almorzar'; return }
   $('estadoTipo').textContent=ins.tipo;
   $('estadoBox').classList.toggle('tarde',!!ins.tarde);
   $('estadoHora').textContent = ins.origen==='Secretaria' ? 'La secretaria te dejó anotado.'
@@ -109,30 +128,64 @@ function pintarEstado(ins){
     : `Avisaste a las ${ins.hora}. Estás en la lista de la cocina.`;
   (ins.tipo==='Hipocalórico'?$('tHipo'):$('tNormal')).checked=true;
 }
-async function mostrarAnotar(){
-  $('vQuien').hidden=true; $('vAnotar').hidden=false; $('btnPersona').hidden=false;
-  $('hola').textContent=`Hola, ${yo.replace(/^Ejemplo: /,'').split(' ')[0]}`;
+async function mostrarAnotar(nombre){
+  $('vCodigo').hidden=true; $('vAnotar').hidden=false; $('btnPersona').hidden=false;
+  if(nombre) $('hola').textContent=`Hola, ${primerNombre(nombre)}`;
   msg('Revisando…');
-  try{ const {inscripcion}=await api('estado',{nombre:yo}); pintarEstado(inscripcion); msg('') }
-  catch(e){ pintarEstado(null); msg(e.message,true) }
+  try{
+    const r=await api('estado',{codigo});
+    store.set('casino_saludo',r.nombre); $('hola').textContent=`Hola, ${primerNombre(r.nombre)}`;
+    pintarEstado(r.inscripcion); msg('');
+  }catch(e){ if(!siCodigoInvalido(e)){ pintarEstado(null); msg(e.message,true) } }
 }
 $('btnAnotar').onclick=async()=>{
   const tipo=document.querySelector('input[name=tipo]:checked').value;
   $('btnAnotar').disabled=true; msg('Guardando…');
-  try{ const {inscripcion}=await api('anotar',{nombre:yo,tipo}); $('btnAnotar').textContent='Voy a almorzar'; pintarEstado(inscripcion); msg('') }
-  catch(e){ msg(e.message,true) }
+  try{ const {inscripcion}=await api('anotar',{codigo,tipo}); $('btnAnotar').textContent='Voy a almorzar'; pintarEstado(inscripcion); msg('') }
+  catch(e){ if(!siCodigoInvalido(e)) msg(e.message,true) }
   $('btnAnotar').disabled=false;
 };
 $('btnCambiar').onclick=()=>{ $('anotado').hidden=true; $('formAnotar').hidden=false; $('btnAnotar').textContent='Guardar cambio'; msg('') };
 $('btnCancelar').onclick=async()=>{
   msg('Quitando…');
-  try{ await api('cancelar',{nombre:yo}); pintarEstado(null); msg('Listo, no estás en la lista de hoy.') }
-  catch(e){ msg(e.message,true) }
+  try{ await api('cancelar',{codigo}); pintarEstado(null); msg('Listo, no estás en la lista de hoy.') }
+  catch(e){ if(!siCodigoInvalido(e)) msg(e.message,true) }
 };
 
+/* ---------- Inicio ---------- */
 $('demo').hidden=!DEMO;
-pintarFecha(); setInterval(pintarFecha,30000);
-yo ? mostrarAnotar() : mostrarQuien();
+pintarFecha();
+
+/* ---------- Actualizar ----------
+   Si la pestaña quedó abierta desde ayer, al volver a mirarla o al cambiar el día
+   se recarga sola. El botón hace lo mismo a pedido.                               */
+let diaMostrado=ahoraStgo().fecha, ultimaCarga=Date.now();
+async function refrescar(){
+  pintarFecha(); diaMostrado=ahoraStgo().fecha; ultimaCarga=Date.now();
+  if(codigo) await mostrarAnotar(store.get('casino_saludo'));
+}
+$('btnRefrescar').onclick=async()=>{
+  const b=$('btnRefrescar'); b.disabled=true; b.classList.add('girando');
+  await refrescar();
+  b.disabled=false; b.classList.remove('girando');
+  if(codigo && !$('msg').classList.contains('err')) msg(`Actualizado a las ${ahoraStgo().hora}.`);
+};
+setInterval(()=>{ pintarFecha(); if(ahoraStgo().fecha!==diaMostrado) refrescar() },30000);
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && (ahoraStgo().fecha!==diaMostrado || Date.now()-ultimaCarga>60000)) refrescar();
+});
+window.addEventListener('pageshow',e=>{ if(e.persisted) refrescar() });   // volver con "atrás" en el teléfono
+
+// El link del mensaje trae el código (…/?c=K7P2QX): se usa y se borra de la barra de direcciones
+const deLink = new URLSearchParams(location.search).get('c');
+if(deLink){
+  try{ history.replaceState(null,'',location.pathname) }catch(e){}
+  $('vCodigo').hidden=false; entrar(deLink);
+} else if(codigo){
+  mostrarAnotar(store.get('casino_saludo'));
+} else {
+  mostrarCodigo();
+}
 </script>
 </body>
 </html>

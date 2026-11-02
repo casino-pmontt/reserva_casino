@@ -1,19 +1,19 @@
 /* Asistencia Casino — estilos compartidos (app y administración)
    Layout: una columna tipo "vale de casino"; la administración se ensancha para la tabla */
 :root{
-  --bg:#eef3f2; --card:#ffffff; --fg:#14302c; --muted:#5b726e; --line:#cddbd8;
-  --accent:#0f6b5f; --accent-fg:#ffffff; --mustard:#e2a21b; --mustard-soft:#fbefd2;
-  --ok:#1f7a3a; --warn:#a35a00; --danger:#b3261e;
+  --bg:#f4f2f2; --card:#ffffff; --fg:#161314; --muted:#6b6264; --line:#e2dcdd;
+  --accent:#c8102e; --accent-fg:#ffffff; --accent-ink:#b00e28; --mustard:#e2a21b; --mustard-soft:#fbefd2;
+  --ok:#1f7a3a; --warn:#9a5600; --danger:#a3121f;
   --display:"Familjen Grotesk","Helvetica Neue",Arial,sans-serif;
   --body:"Atkinson Hyperlegible",system-ui,-apple-system,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0f1b1a; --card:#16282a; --fg:#e4efed; --muted:#93aaa6; --line:#294240;
-  --accent:#4cc3ae; --accent-fg:#06201c; --mustard:#f0b93c; --mustard-soft:#3a3018;
+  --bg:#151213; --card:#201b1c; --fg:#f2eeee; --muted:#a89fa1; --line:#3a3133;
+  --accent:#e0384f; --accent-fg:#ffffff; --accent-ink:#ff7d8e; --mustard:#f0b93c; --mustard-soft:#3a3018;
   --ok:#6fd38a; --warn:#f0b05a; --danger:#ff8a80; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0f1b1a; --card:#16282a; --fg:#e4efed; --muted:#93aaa6; --line:#294240;
-  --accent:#4cc3ae; --accent-fg:#06201c; --mustard:#f0b93c; --mustard-soft:#3a3018;
+  --bg:#151213; --card:#201b1c; --fg:#f2eeee; --muted:#a89fa1; --line:#3a3133;
+  --accent:#e0384f; --accent-fg:#ffffff; --accent-ink:#ff7d8e; --mustard:#f0b93c; --mustard-soft:#3a3018;
   --ok:#6fd38a; --warn:#f0b05a; --danger:#ff8a80; color-scheme:dark}
 
 [hidden]{display:none!important}
@@ -28,6 +28,29 @@ h2{font-size:20px}
 .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .demo{background:var(--mustard-soft);border:1px dashed var(--mustard);border-radius:10px;padding:8px 12px;font-size:14px}
 header{display:flex;flex-direction:column;gap:4px}
+
+/* Marca y botón Actualizar */
+.marca{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.logo{height:46px;width:auto;max-width:60%;display:block}
+.logo.oscuro{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo.claro{display:none}:root:not([data-theme="light"]) .logo.oscuro{display:block}}
+:root[data-theme="dark"] .logo.claro{display:none}
+:root[data-theme="dark"] .logo.oscuro{display:block}
+.marca-acciones{display:flex;align-items:center;gap:8px}
+.tema{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;flex:none;background:var(--card);color:var(--fg);border:1.5px solid var(--line);border-radius:50%;padding:0}
+.tema svg{width:19px;height:19px}
+.tema:hover{border-color:var(--accent)}
+.tema:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
+.tema .ico-sol{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tema .ico-sol{display:block}:root:not([data-theme="light"]) .tema .ico-luna{display:none}}
+:root[data-theme="dark"] .tema .ico-sol{display:block}
+:root[data-theme="dark"] .tema .ico-luna{display:none}
+.refrescar{display:inline-flex;align-items:center;gap:6px;background:var(--card);color:var(--fg);border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;font-size:15px;font-weight:700;white-space:nowrap}
+.refrescar svg{width:16px;height:16px;flex:none}
+.refrescar:hover{border-color:var(--accent)}
+.refrescar:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
+.refrescar:disabled{opacity:.6;cursor:default}
+@media (prefers-reduced-motion:no-preference){.refrescar.girando svg{animation:girar .7s linear infinite}@keyframes girar{to{transform:rotate(360deg)}}}
 .fecha{font-size:clamp(28px,7vw,40px);line-height:1.05;font-weight:700}
 .fecha::first-letter{text-transform:uppercase}
 .corte{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;margin-top:8px;font-size:14px;font-weight:700;
@@ -49,7 +72,7 @@ header{display:flex;flex-direction:column;gap:4px}
 .opcion label b{font-family:var(--display);font-size:19px}
 .opcion label span{font-size:13px;color:var(--muted)}
 .opcion.compacta label{min-height:0;padding:10px 12px}
-.opcion input:checked+label{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
+.opcion input:checked+label{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--card))}
 .opcion input:focus-visible+label{outline:3px solid var(--mustard);outline-offset:2px}
 
 button{font:inherit;cursor:pointer}
@@ -57,7 +80,7 @@ button{font:inherit;cursor:pointer}
 .btn:disabled{opacity:.5;cursor:default}
 .btn.sec{background:transparent;color:var(--fg);border:2px solid var(--line);font-size:16px;padding:12px}
 .btn.chico{width:auto;padding:10px 16px;font-size:16px}
-.link{background:none;border:0;color:var(--accent);text-decoration:underline;padding:4px;font-size:15px}
+.link{background:none;border:0;color:var(--accent-ink);text-decoration:underline;padding:4px;font-size:15px}
 .btn:focus-visible,.link:focus-visible,select:focus-visible,input:focus-visible,.quitar:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
 
 .estado{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:12px;background:color-mix(in srgb,var(--ok) 12%,var(--card))}
@@ -95,8 +118,32 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-si
 .tabla th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .tabla tr:last-child td{border-bottom:0}
 .tabla td.vacio{color:var(--muted);text-align:center;padding:20px}
+.tabla .cod{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-weight:700;letter-spacing:.12em}
+.tabla td.der{text-align:right;white-space:nowrap}
+
+/* Campo de código (primer ingreso) */
+input.codigo{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:24px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;text-align:center}
+input.codigo::placeholder{letter-spacing:.05em;font-weight:400;font-size:17px;text-transform:none}
+
+/* Personal y códigos (secretaria) */
+details.personal{background:var(--card);border:1px solid var(--line);border-radius:14px}
+details.personal>summary{cursor:pointer;padding:16px 18px;font-family:var(--display);font-size:20px;font-weight:700;list-style-position:inside}
+details.personal>summary span{font-family:var(--body);font-size:14px;font-weight:400;color:var(--muted);margin-left:6px}
+details.personal>summary:focus-visible{outline:3px solid var(--mustard);outline-offset:2px;border-radius:14px}
+details.personal .cuerpo{display:flex;flex-direction:column;gap:12px;padding:0 18px 18px}
+details.personal .tabla{border-radius:10px}
+.copiar{background:var(--accent);color:var(--accent-fg);border:0;border-radius:8px;padding:6px 12px;font-size:14px;font-weight:700;white-space:nowrap}
+.copiar.hecho{background:var(--ok)}
+.acc{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.correo{display:inline-block;border:1.5px solid var(--accent);color:var(--accent-ink);background:var(--card);border-radius:8px;padding:5px 11px;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap}
+.correo:hover{background:color-mix(in srgb,var(--accent) 8%,var(--card))}
+.correo:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
+.correo.hecho{border-color:var(--ok);color:var(--ok)}
+.correo.off{border-color:var(--line);color:var(--muted);cursor:not-allowed}
+.copiar:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
+textarea.respaldo{width:100%;min-height:110px;font:inherit;font-size:14px;padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--card);color:var(--fg)}
 .chip{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
-.chip.N{background:color-mix(in srgb,var(--accent) 15%,var(--card));color:var(--accent)}
+.chip.N{background:color-mix(in srgb,var(--accent) 13%,var(--card));color:var(--accent-ink)}
 .chip.H{background:var(--mustard-soft);color:var(--warn)}
 .chip.S{background:color-mix(in srgb,var(--fg) 8%,var(--card));color:var(--fg)}
 .chip.T{background:var(--mustard-soft);color:var(--warn)}
@@ -106,6 +153,7 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-si
 /* ---------- Hoja para firmar (solo al imprimir) ---------- */
 .solo-print{display:none}
 @media print{
+  .marca{display:none!important}
   @page{size:A4 portrait;margin:12mm 12mm 14mm}
   :root,html,body{background:#fff!important;color:#000!important}
   body{padding:0!important;font-size:11pt}
@@ -116,7 +164,9 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-si
   #hoja tr{break-inside:avoid;page-break-inside:avoid}
   #hoja th,#hoja td{border:1px solid #000;padding:5px 6px;text-align:left;vertical-align:middle;color:#000}
   #hoja .titulo th{border:0;padding:0 0 6px;font-weight:400}
+  #hoja .titulo .cab{display:flex;align-items:center;justify-content:space-between;gap:12px}
   #hoja .titulo .t{font-family:var(--display);font-size:15pt;font-weight:700}
+  #hoja .logo-print{height:11mm;width:auto;display:block}
   #hoja .titulo .d{display:flex;justify-content:space-between;gap:12px;font-size:10pt;margin-top:2px}
   #hoja .titulo .d b::first-letter{text-transform:uppercase}
   #hoja .cols th{font-size:8.5pt;text-transform:uppercase;letter-spacing:.04em;background:#eee}
