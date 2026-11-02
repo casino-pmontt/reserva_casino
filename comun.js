@@ -1,7 +1,7 @@
 /* ===== CONFIGURACIÓN (solo se toca aquí) ===== */
 const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbyXVpCYD7nJHTySUPfN0az-JDOWFoJQxARbTzBxmW-gPFIwF2z-Yqy7juc1hC_02PdL6A/exec', // URL de la app web de Apps Script (termina en /exec). Vacía = modo demostración
-  HORA_CORTE: '10:00',      // solo valor inicial: la hora real la define la secretaria desde su página
+  HORA_CORTE: '10:00',      // solo valor inicial: la hora real la define Administración desde su página
   TZ: 'America/Santiago'
 };
 /* ============================================= */
@@ -41,7 +41,7 @@ async function api(accion, params={}){            // app del personal (lleva el 
   if(DEMO) return demo(accion, params);
   return enviar({accion, ...params});
 }
-async function apiAdmin(accion, params={}){       // secretaria (lleva la clave)
+async function apiAdmin(accion, params={}){       // Administración (lleva la clave)
   if(DEMO) return demoAdmin(accion, params);
   return enviar({accion, ...params});
 }
@@ -73,7 +73,7 @@ function demoDelDia(f){ return demoTodas().filter(x=>x.fecha===f) }
 function demoCorte(){ return store.get('casino_demo_corte')||CONFIG.HORA_CORTE }
 function demo(accion,p){
   const yo=DEMO_PERSONAS.find(x=>x.codigo===normCodigo(p.codigo));
-  if(!yo) throw errorDe('CODIGO: Código no encontrado. Revísalo en tu mensaje o pídeselo a la secretaria.');
+  if(!yo) throw errorDe('CODIGO: Código no encontrado. Revísalo en tu mensaje o pídeselo a Administración.');
   const t=ahoraStgo(), mio=x=>x.nombre===yo.nombre;
   if(accion==='entrar') return {nombre:yo.nombre,corte:demoCorte()};
   if(accion==='estado') return {nombre:yo.nombre,corte:demoCorte(),inscripcion:demoDelDia(t.fecha).find(mio)||null};
@@ -87,7 +87,7 @@ function demoAdmin(accion,p){
   if(accion==='verificar') return {ok:true};
   if(accion==='lista'){ const cc=Object.fromEntries(DEMO_PERSONAS.map(x=>[x.nombre.toLowerCase(),x.cc]));
     return {fecha:f,corte:demoCorte(),personas:DEMO_PERSONAS,filas:demoDelDia(f).map(x=>({...x,cc:x.cc||cc[x.nombre.toLowerCase()]||''}))} }
-  if(accion==='agregar'){ demoGuardar(f,p.nombre,{fecha:f,nombre:p.nombre,tipo:p.tipo,hora:ahoraStgo().hora,tarde:false,origen:'Secretaria',cc:p.cc||''}); return {ok:true} }
+  if(accion==='agregar'){ demoGuardar(f,p.nombre,{fecha:f,nombre:p.nombre,tipo:p.tipo,hora:ahoraStgo().hora,tarde:false,origen:'Administración',cc:p.cc||''}); return {ok:true} }
   if(accion==='quitar'){ demoGuardar(f,p.nombre,null); return {ok:true} }
   if(accion==='corte'){ const m=String(p.hora||'').match(/^(\d{1,2})[:.](\d{2})$/);
     if(!m||+m[1]>23||+m[2]>59) throw new Error('Hora no válida. Usa el formato 10:00');

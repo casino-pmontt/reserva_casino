@@ -228,7 +228,7 @@ function pintar(filas, f){
     const tr=document.createElement('tr');
     td(tr,x.nombre); td(tr,x.cc||'—');
     td(tr,chip(x.tipo,x.tipo==='Normal'?'N':'H'));
-    td(tr, x.origen==='Secretaria' ? chip('Agregado por ti','S') : x.tarde ? chip(`${x.hora} · tarde`,'T') : x.hora);
+    td(tr, x.origen && x.origen!=='App' ? chip('Agregado por ti','S') : x.tarde ? chip(`${x.hora} · tarde`,'T') : x.hora);
     const b=document.createElement('button'); b.className='quitar'; b.textContent='Quitar';
     b.onclick=()=>quitar(b,x.nombre); td(tr,b); tb.append(tr);
   });
@@ -304,7 +304,7 @@ function pintarPersonal(){
   });
 }
 /* Correo individual: abre Outlook (o el correo predeterminado del PC) con el mensaje listo.
-   La secretaria lo revisa y lo envía desde su propia cuenta. */
+   Administración lo revisa y lo envía desde su propia cuenta. */
 const correoValido = c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c||'');
 function botonCorreo(p){
   if(!p.codigo || !correoValido(p.correo)){
