@@ -60,7 +60,7 @@ function errorDe(m){
 }
 
 /* ---------- Modo demostración: imita la planilla en este navegador ---------- */
-const DEMO_CLAVE='1234';
+const DEMO_CLAVE='1234';   // SOLO para el modo demostración (API_URL vacía). La clave real está en Apps Script → Propiedades del script → CLAVE_ADMIN
 const DEMO_PERSONAS=[
   {nombre:'Ejemplo: Ana Soto',cc:'LAB-210',codigo:'K7P2QX',correo:'ana.soto@ejemplo.cl',nombreLista:'Soto Rojas Ana (ejemplo)'},{nombre:'Ejemplo: Luis Vera',cc:'MAN-330',codigo:'H4NB8R',correo:'luis.vera@ejemplo.cl',nombreLista:'Vera Díaz Luis (ejemplo)'},
   {nombre:'Ejemplo: Marta Díaz',cc:'ADM-100',codigo:'WD3JMA',correo:'',nombreLista:'Díaz Muñoz Marta (ejemplo)'},{nombre:'Ejemplo: Pedro Ruiz',cc:'PRO-420',codigo:'T9CQ5E'}];
