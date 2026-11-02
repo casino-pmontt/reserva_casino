@@ -12,7 +12,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div id="demo" class="demo" hidden><b>Modo demostración.</b> Prueba con el código <b>K7P2QX</b>. Los datos quedan solo en este dispositivo.</div>
+  <div id="demo" class="demo" hidden><b>Modo demo.</b> Prueba con el código <b>K7P2QX</b>. Los datos quedan solo en este dispositivo.</div>
 
   <header>
     <div class="marca">
@@ -31,7 +31,7 @@
   <!-- Primera vez: código -->
   <section class="ticket vale" id="vCodigo" hidden>
     <h2 class="hola">Escribe tu código</h2>
-    <p class="msg">Está en el mensaje que te envió la secretaria. Solo se pide la primera vez.</p>
+    <p class="msg">Está en el mensaje que te envió la Eli. Solo se pide la primera vez.</p>
     <form id="formCodigo" class="campo" style="gap:14px">
       <div class="campo">
         <label for="txtCodigo">Código</label>
@@ -112,7 +112,7 @@ $('btnPersona').onclick=()=>mostrarCodigo();
 
 /* ---------- Anotarse ---------- */
 function siCodigoInvalido(e){
-  if(e.codigo){ mostrarCodigo('Tu código cambió o ya no es válido. Escribe el nuevo que te envió la secretaria.'); return true }
+  if(e.codigo){ mostrarCodigo('Tu código cambió o ya no es válido. Escribe el nuevo que te envió la Eli.'); return true }
   return false;
 }
 function pintarEstado(ins){
@@ -123,8 +123,8 @@ function pintarEstado(ins){
   if(!ins){ $('btnAnotar').textContent='Voy a almorzar'; return }
   $('estadoTipo').textContent=ins.tipo;
   $('estadoBox').classList.toggle('tarde',!!ins.tarde);
-  $('estadoHora').textContent = ins.origen==='Secretaria' ? 'La secretaria te dejó anotado.'
-    : ins.tarde ? `Avisaste a las ${ins.hora}, después del corte. La cocina lo verá aparte.`
+  $('estadoHora').textContent = ins.origen==='Secretaria' ? 'La administradora te dejó anotado.'
+    : ins.tarde ? `Avisaste a las ${ins.hora}, después del corte. La lista ya fue entregada al casino.`
     : `Avisaste a las ${ins.hora}. Estás en la lista de la cocina.`;
   (ins.tipo==='Hipocalórico'?$('tHipo'):$('tNormal')).checked=true;
 }
